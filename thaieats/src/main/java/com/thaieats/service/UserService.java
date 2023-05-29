@@ -1,10 +1,10 @@
 package com.thaieats.service;
 
-import com.thaieats.model.UserModel;
+import com.thaieats.model.User;
 
 public interface UserService {
-    public UserModel findByEmail(String email);
+    public User findByUser(String userName);
 
-    public UserModel createUser(UserModel userInfo);
+    public User createUser(User userInfo);
 
 }

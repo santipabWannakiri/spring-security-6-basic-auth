@@ -1,4 +1,4 @@
-package com.thaieats.config;
+package com.thaieats.configuration;
 
 
 import jakarta.servlet.FilterChain;
@@ -7,25 +7,24 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authorization.AuthorityAuthorizationManager;
-import org.springframework.security.authorization.AuthorizationManagers;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import java.io.IOException;
 
+import static org.springframework.http.HttpMethod.*;
+import static org.springframework.http.HttpMethod.DELETE;
+
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig extends GenericFilterBean {
+public class SecurityConfiguration extends GenericFilterBean {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -33,16 +32,28 @@ public class SecurityConfig extends GenericFilterBean {
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/resources/**", "/signup", "/api/a").permitAll()
-                        .requestMatchers("/api/user").access(AuthorizationManagers.anyOf(AuthorityAuthorizationManager.hasRole("ADMIN"), AuthorityAuthorizationManager.hasRole("USER")))
-                        .requestMatchers("/api/super").access(AuthorizationManagers.allOf(AuthorityAuthorizationManager.hasRole("ADMIN"), AuthorityAuthorizationManager.hasRole("SUPER")))
-                        .requestMatchers("/api/admin").hasRole("ADMIN")
+                        //Sequence of Matchers is important; it requires checking privilege before role.
+                        .requestMatchers(GET, "/api/v1/management/**").hasAuthority("READ")
+                        .requestMatchers(POST, "/api/v1/management/**").hasAuthority("WRITE")
+                        .requestMatchers(DELETE, "/api/v1/management/**").hasAuthority("DELETE")
+                        .requestMatchers(new AntPathRequestMatcher("/h2/**"), new AntPathRequestMatcher("/api/v1/user/**")).permitAll() //Spring security 6.0.3 --> requestMatchers not working with /h2 path
+                        .requestMatchers("/api/v1/management/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+/*                      .requestMatchers("/api/user").access(AuthorizationManagers.anyOf(AuthorityAuthorizationManager.hasRole("ADMIN"), AuthorityAuthorizationManager.hasRole("USER")))
+                        .requestMatchers("/api/super").access(AuthorizationManagers.allOf(AuthorityAuthorizationManager.hasRole("ADMIN"), AuthorityAuthorizationManager.hasRole("SUPER_ADMIN")))
+                        .requestMatchers("/api/admin").hasRole("ADMIN")*/
                         .anyRequest().denyAll())
+                .headers().frameOptions().disable().and()
                 .httpBasic(Customizer.withDefaults());
         return http.build();
     }
 
     @Bean
+    public BCryptPasswordEncoder bCryptPasswordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+
+/*    @Bean
     public UserDetailsService users() {
         // The builder will ensure the passwords are encoded before saving in memory
         UserDetails user = User.withDefaultPasswordEncoder()
@@ -64,13 +75,12 @@ public class SecurityConfig extends GenericFilterBean {
                 .build();
 
         return new InMemoryUserDetailsManager(user, admin, superUser);
-    }
+    }*/
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
-        // do something before the rest of the application
-        System.out.println("The parameter str is : " + request.getParameter("str"));
+        // do something before Pre-processing
         filterChain.doFilter(request, response);
-        // do something after the rest of the application
+        // do something after Post-processing
     }
 }

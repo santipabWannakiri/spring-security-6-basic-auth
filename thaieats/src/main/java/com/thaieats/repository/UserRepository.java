@@ -1,12 +1,11 @@
 package com.thaieats.repository;
 
-import com.thaieats.model.UserModel;
+import com.thaieats.model.User;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-@Repository("userRepo")
-public interface UserRepository extends CrudRepository<UserModel,Long> {
-
-    UserModel findByEmail(String email);
+@Repository("UserRepository")
+public interface UserRepository extends CrudRepository<User, Integer> {
+    User findByUsername(String userName);
 
 }

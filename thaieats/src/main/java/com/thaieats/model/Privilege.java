@@ -1,15 +1,15 @@
 package com.thaieats.model;
 
+
 import jakarta.persistence.*;
 import lombok.Data;
 
-@Entity
 @Data
-@Table(name = "role_table")
-public class RoleModel {
+@Entity
+@Table(name = "privileges")
+public class Privilege {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name="role_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     private String name;
